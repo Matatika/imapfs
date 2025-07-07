@@ -33,12 +33,12 @@ wheels = [
 ]
 
 [[package]]
-name = "imapclient"
-version = "3.0.1"
+name = "imap-tools"
+version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b6/63/0eea51c9c263c18021cdc5866def55c98393f3bd74bbb8e3053e36f0f81a/IMAPClient-3.0.1.zip", hash = "sha256:78e6d62fbfbbe233e1f0e0e993160fd665eb1fd35973acddc61c15719b22bc02", size = 244222, upload-time = "2023-12-02T08:24:15.344Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/76/2d74bf4702d7d9fb2dd056e058929961a05389be47b990f3275e8596012e/imap_tools-1.11.0.tar.gz", hash = "sha256:77b055d301f24e668ff54ad50cc32a36d1579c6aa9b26e5fb6501fb622feb6ea", size = 46191, upload-time = "2025-06-30T05:47:21.111Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/8a/d1364c1c6d8f53ea390e8f1c6da220a4f9ee478ac8a473ae0669a2fb6f51/IMAPClient-3.0.1-py2.py3-none-any.whl", hash = "sha256:d77d77caa4123e0233b5cf2b9c54a078522e63270b88d3f48653a28637fd8828", size = 182490, upload-time = "2023-12-02T08:24:11.854Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/8f/75524e1a040183cc437332e2de6e8f975c345fff8b5aaa35e0d20dec24f9/imap_tools-1.11.0-py3-none-any.whl", hash = "sha256:7c797b421fdf1b898b4ee0042fe02d10037d56f9acacca64086c2af36d830a24", size = 34855, upload-time = "2025-06-30T05:47:15.657Z" },
 ]
 
 [[package]]
@@ -47,7 +47,7 @@ version = "0.0.1"
 source = { virtual = "." }
 dependencies = [
     { name = "fsspec" },
-    { name = "imapclient" },
+    { name = "imap-tools" },
 ]
 
 [package.dev-dependencies]
@@ -60,7 +60,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "fsspec", specifier = ">=2025.5.1" },
-    { name = "imapclient", specifier = ">=3.0.1" },
+    { name = "imap-tools", specifier = ">=1.11.0" },
 ]
 
 [package.metadata.requires-dev]

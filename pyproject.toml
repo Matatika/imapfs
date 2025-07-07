@@ -7,7 +7,7 @@ authors = [{ name = "Reuben Frankel", email = "rfrankel@matatika.com" }]
 requires-python = ">=3.9"
 dependencies = [
     "fsspec>=2025.5.1",
-    "imapclient>=3.0.1",
+    "imap-tools>=1.11.0",
 ]
 
 [dependency-groups]

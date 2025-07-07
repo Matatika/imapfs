@@ -9,7 +9,7 @@ from smtplib import SMTP
 
 import pytest
 from dotenv import load_dotenv
-from imapclient import IMAPClient
+from imap_tools import MailBox
 from imapfs.core import IMAPFileSystem
 
 TEST_FOLDER_NAME = f"imapfs-{uuid.uuid4()}"
@@ -27,17 +27,19 @@ load_dotenv()
 
 @pytest.fixture(scope="session")
 def fs():
-    with IMAPFileSystem(
+    fs = IMAPFileSystem(
         host=os.getenv("IMAP_HOST"),
         username=os.getenv("IMAP_USERNAME"),
         password=os.getenv("IMAP_PASSWORD"),
-    ) as fs:
+    )
+
+    with fs.mailbox:
         yield fs
 
 
 @pytest.fixture(scope="session")
-def imap_client(fs: IMAPFileSystem):
-    return fs.client
+def imap_mailbox(fs: IMAPFileSystem):
+    return fs.mailbox
 
 
 @pytest.fixture(scope="session")
@@ -54,20 +56,17 @@ def smtp_client():
 
 @pytest.fixture(scope="session")
 def test_message_search_criteria(smtp_client: SMTP):
-    return [
-        "FROM",
-        smtp_client.user,
-        "TO",
-        os.getenv("IMAP_USERNAME"),
-        "SINCE",
-        datetime.now(tz=timezone.utc).date(),
-    ]
+    return "FROM {from_} TO {to} SINCE {since}".format(
+        from_=smtp_client.user,
+        to=os.getenv("IMAP_USERNAME"),
+        since=datetime.now(tz=timezone.utc).date().strftime(r"%d-%b-%Y"),
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
-def create_test_folders(imap_client: IMAPClient):
-    imap_client.create_folder(TEST_FOLDER_NAME)
-    imap_client.create_folder(TEST_SUBFOLDER_NAME)
+def create_test_folders(imap_mailbox: MailBox):
+    imap_mailbox.folder.create(TEST_FOLDER_NAME)
+    imap_mailbox.folder.create(TEST_SUBFOLDER_NAME)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -82,21 +81,21 @@ def send_message(smtp_client: SMTP):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def delete_test_messages(imap_client: IMAPClient, test_message_search_criteria):
+def delete_test_messages(imap_mailbox: MailBox, test_message_search_criteria):
     yield
 
-    folders = imap_client.list_folders()
-    trash_flagged = [name for (flags, _, name) in folders if b"\\Trash" in flags]
+    folders = imap_mailbox.folder.list()
+    trash_flagged = [f.name for f in folders if r"\Trash" in f.flags]
 
-    imap_client.select_folder(INBOX_NAME)
+    imap_mailbox.folder.set(INBOX_NAME)
 
     if (num_trash := len(trash_flagged)) == 1:
         trash = trash_flagged[0]
 
-        msg_ids = imap_client.search(test_message_search_criteria)
-        imap_client.move(msg_ids, trash)
+        msg_ids = imap_mailbox.uids(test_message_search_criteria)
+        imap_mailbox.move(msg_ids, trash)
 
-        imap_client.select_folder(trash)
+        imap_mailbox.folder.set(trash)
     else:
         warnings.warn(
             f"Found {num_trash} folders with the `Trash` flag, so will not move any "
@@ -104,43 +103,42 @@ def delete_test_messages(imap_client: IMAPClient, test_message_search_criteria):
             stacklevel=1,
         )
 
-    msg_ids = imap_client.search(test_message_search_criteria)
+    msg_ids = imap_mailbox.uids(test_message_search_criteria)
 
-    imap_client.delete_messages(msg_ids)
-    imap_client.uid_expunge(msg_ids)
+    imap_mailbox.delete(msg_ids)
 
-    imap_client.delete_folder(TEST_FOLDER_NAME)
-    imap_client.delete_folder(TEST_SUBFOLDER_NAME)
+    imap_mailbox.folder.delete(TEST_FOLDER_NAME)
+    imap_mailbox.folder.delete(TEST_SUBFOLDER_NAME)
 
 
 @pytest.fixture
-def move_to_test_folder(imap_client: IMAPClient, test_message_search_criteria):
-    imap_client.select_folder(INBOX_NAME)
-    inbox_msg_id = imap_client.search(test_message_search_criteria)[0]
-    imap_client.move(inbox_msg_id, TEST_FOLDER_NAME)
+def move_to_test_folder(imap_mailbox: MailBox, test_message_search_criteria):
+    imap_mailbox.folder.set(INBOX_NAME)
+    inbox_msg_id = imap_mailbox.uids(test_message_search_criteria)[0]
+    imap_mailbox.move(inbox_msg_id, TEST_FOLDER_NAME)
 
-    imap_client.select_folder(TEST_FOLDER_NAME)
-    folder_msg_id = imap_client.search(test_message_search_criteria)[0]
+    imap_mailbox.folder.set(TEST_FOLDER_NAME)
+    folder_msg_id = imap_mailbox.uids(test_message_search_criteria)[0]
 
     yield folder_msg_id
 
-    imap_client.select_folder(TEST_FOLDER_NAME)
-    imap_client.move(folder_msg_id, INBOX_NAME)
+    imap_mailbox.folder.set(TEST_FOLDER_NAME)
+    imap_mailbox.move(folder_msg_id, INBOX_NAME)
 
 
 @pytest.fixture
-def move_to_test_subfolder(imap_client: IMAPClient, test_message_search_criteria):
-    imap_client.select_folder(INBOX_NAME)
-    inbox_msg_id = imap_client.search(test_message_search_criteria)[0]
-    imap_client.move(inbox_msg_id, TEST_SUBFOLDER_NAME)
+def move_to_test_subfolder(imap_mailbox: MailBox, test_message_search_criteria):
+    imap_mailbox.folder.set(INBOX_NAME)
+    inbox_msg_id = imap_mailbox.uids(test_message_search_criteria)[0]
+    imap_mailbox.move(inbox_msg_id, TEST_SUBFOLDER_NAME)
 
-    imap_client.select_folder(TEST_SUBFOLDER_NAME)
-    subfolder_msg_id = imap_client.search(test_message_search_criteria)[0]
+    imap_mailbox.folder.set(TEST_SUBFOLDER_NAME)
+    subfolder_msg_id = imap_mailbox.uids(test_message_search_criteria)[0]
 
     yield subfolder_msg_id
 
-    imap_client.select_folder(TEST_SUBFOLDER_NAME)
-    imap_client.move(subfolder_msg_id, INBOX_NAME)
+    imap_mailbox.folder.set(TEST_SUBFOLDER_NAME)
+    imap_mailbox.move(subfolder_msg_id, INBOX_NAME)
 
 
 @pytest.mark.parametrize("path", ["", "/"], ids=["empty string", "single slash"])
