@@ -23,8 +23,7 @@ class IMAPFileSystem(AbstractFileSystem):
 
     @override
     def ls(self, path: str, detail=True, **kwargs):
-        if path.endswith("/"):
-            path = path[:-1]
+        path = path.strip("/")
 
         folders = self.client.list_folders(path)
 
@@ -32,6 +31,12 @@ class IMAPFileSystem(AbstractFileSystem):
             name: {"name": name, "size": 0, "type": "directory"}
             for (*_, name) in folders
         }
+
+        if path:
+            self.client.select_folder(path)
+
+            for msg_id in self.client.search():
+                details[msg_id] = {"name": msg_id, "size": 0, "type": "directory"}
 
         return list(details.values() if detail else details.keys())
 
