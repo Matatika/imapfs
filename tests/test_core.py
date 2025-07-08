@@ -172,6 +172,7 @@ def move_to_test_subfolder(imap_mailbox: MailBox, test_message_search_criteria):
 @pytest.mark.parametrize("path", ["", "/"], ids=["empty string", "single slash"])
 def test_ls_root(fs: IMAPFileSystem, path):
     objects = fs.ls(path)
+
     assert INBOX_FOLDER in objects
     assert TEST_FOLDER in objects
 
@@ -193,6 +194,7 @@ def test_ls_root(fs: IMAPFileSystem, path):
 )
 def test_ls_folder(fs: IMAPFileSystem, move_to_test_folder, path):
     objects = fs.ls(path)
+
     assert objects == [
         TEST_FOLDER,
         TEST_SUBFOLDER,
@@ -221,6 +223,7 @@ def test_ls_folder(fs: IMAPFileSystem, move_to_test_folder, path):
 )
 def test_ls_folder_no_detail(fs: IMAPFileSystem, move_to_test_folder, path):
     objects = fs.ls(path, detail=False)
+
     assert objects == [
         TEST_FOLDER_NAME,
         TEST_SUBFOLDER_NAME,
@@ -245,6 +248,7 @@ def test_ls_folder_no_detail(fs: IMAPFileSystem, move_to_test_folder, path):
 )
 def test_ls_subfolder(fs: IMAPFileSystem, move_to_test_subfolder, path):
     objects = fs.ls(path)
+
     assert objects == [
         TEST_SUBFOLDER,
         {
@@ -254,9 +258,11 @@ def test_ls_subfolder(fs: IMAPFileSystem, move_to_test_subfolder, path):
         },
     ]
 
+
 def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
     objects = fs.ls(path)
+
     assert objects == [
         {
             "name": "test_0.csv",
@@ -279,12 +285,14 @@ def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
 def test_ls_folder_message_no_detail(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
     objects = fs.ls(path, detail=False)
+
     assert objects == ["test_0.csv", "test_1.csv", "test_2.csv"]
 
 
 def test_ls_subfolder_message(fs: IMAPFileSystem, move_to_test_subfolder):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}"
     objects = fs.ls(path)
+
     assert objects == [
         {
             "name": "test_0.csv",
@@ -345,8 +353,10 @@ def test_ls_subfolder_not_found(fs: IMAPFileSystem, path):
 
 def test_ls_folder_message_not_found(fs: IMAPFileSystem):
     uint32_max = 2**32 - 1
+    path = f"{TEST_FOLDER_NAME}/{uint32_max}"
+
     with pytest.raises(FileNotFoundError):
-        fs.ls(f"{TEST_FOLDER_NAME}/{uint32_max}")
+        fs.ls(path)
 
 
 def test_ls_folder_message_malformed_id(fs: IMAPFileSystem):
@@ -357,16 +367,19 @@ def test_ls_folder_message_malformed_id(fs: IMAPFileSystem):
 def test_ls_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
     objects = fs.ls(path)
+
     assert objects == [{"name": "test_0.csv", "size": 135, "type": "file"}]
 
 
 def test_ls_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfolder):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
     objects = fs.ls(path)
+
     assert objects == [{"name": "test_0.csv", "size": 135, "type": "file"}]
 
 
 def test_ls_folder_message_attachment_not_found(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{uuid.uuid4()}"
+
     with pytest.raises(FileNotFoundError):
         fs.ls(path)
