@@ -89,8 +89,9 @@ class IMAPFileSystem(AbstractFileSystem):
                 if filename and filename != att.filename:
                     continue
 
-                details[att.filename] = {
-                    "name": att.filename,
+                name = f"{path}/{att.filename}"
+                details[name] = {
+                    "name": name,
                     "size": att.size,
                     "type": "file",
                 }
@@ -100,6 +101,11 @@ class IMAPFileSystem(AbstractFileSystem):
 
         else:
             for msg_id in self.mailbox.uids():
-                details[msg_id] = {"name": msg_id, "size": 0, "type": "directory"}
+                name = f"{path}/{msg_id}"
+                details[name] = {
+                    "name": name,
+                    "size": 0,
+                    "type": "directory",
+                }
 
         return details

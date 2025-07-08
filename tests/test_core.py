@@ -199,7 +199,7 @@ def test_ls_folder(fs: IMAPFileSystem, move_to_test_folder, path):
         TEST_FOLDER,
         TEST_SUBFOLDER,
         {
-            "name": move_to_test_folder,
+            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}",
             "size": 0,
             "type": "directory",
         },
@@ -227,7 +227,7 @@ def test_ls_folder_no_detail(fs: IMAPFileSystem, move_to_test_folder, path):
     assert objects == [
         TEST_FOLDER_NAME,
         TEST_SUBFOLDER_NAME,
-        move_to_test_folder,
+        f"{TEST_FOLDER_NAME}/{move_to_test_folder}",
     ]
 
 
@@ -252,7 +252,7 @@ def test_ls_subfolder(fs: IMAPFileSystem, move_to_test_subfolder, path):
     assert objects == [
         TEST_SUBFOLDER,
         {
-            "name": move_to_test_subfolder,
+            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}",
             "size": 0,
             "type": "directory",
         },
@@ -265,17 +265,17 @@ def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
 
     assert objects == [
         {
-            "name": "test_0.csv",
+            "name": f"{path}/test_0.csv",
             "size": 135,
             "type": "file",
         },
         {
-            "name": "test_1.csv",
+            "name": f"{path}/test_1.csv",
             "size": 135,
             "type": "file",
         },
         {
-            "name": "test_2.csv",
+            "name": f"{path}/test_2.csv",
             "size": 135,
             "type": "file",
         },
@@ -286,7 +286,7 @@ def test_ls_folder_message_no_detail(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
     objects = fs.ls(path, detail=False)
 
-    assert objects == ["test_0.csv", "test_1.csv", "test_2.csv"]
+    assert objects == [f"{path}/test_0.csv", f"{path}/test_1.csv", f"{path}/test_2.csv"]
 
 
 def test_ls_subfolder_message(fs: IMAPFileSystem, move_to_test_subfolder):
@@ -295,17 +295,17 @@ def test_ls_subfolder_message(fs: IMAPFileSystem, move_to_test_subfolder):
 
     assert objects == [
         {
-            "name": "test_0.csv",
+            "name": f"{path}/test_0.csv",
             "size": 135,
             "type": "file",
         },
         {
-            "name": "test_1.csv",
+            "name": f"{path}/test_1.csv",
             "size": 135,
             "type": "file",
         },
         {
-            "name": "test_2.csv",
+            "name": f"{path}/test_2.csv",
             "size": 135,
             "type": "file",
         },
@@ -368,14 +368,14 @@ def test_ls_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
     objects = fs.ls(path)
 
-    assert objects == [{"name": "test_0.csv", "size": 135, "type": "file"}]
+    assert objects == [{"name": f"{path}/test_0.csv", "size": 135, "type": "file"}]
 
 
 def test_ls_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfolder):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
     objects = fs.ls(path)
 
-    assert objects == [{"name": "test_0.csv", "size": 135, "type": "file"}]
+    assert objects == [{"name": f"{path}/test_0.csv", "size": 135, "type": "file"}]
 
 
 def test_ls_folder_message_attachment_not_found(fs: IMAPFileSystem, move_to_test_folder):
