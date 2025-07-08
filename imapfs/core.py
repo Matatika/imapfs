@@ -58,7 +58,7 @@ class IMAPFileSystem(AbstractFileSystem):
 
         if msg_id:
             self.mailbox.folder.set(folder)
-            msg = next(self.mailbox.fetch(f"UID {msg_id}"))
+            msg = next(self.mailbox.fetch(f"UID {msg_id}", mark_seen=False))
 
             for att in msg.attachments:
                 details[att.filename] = {
