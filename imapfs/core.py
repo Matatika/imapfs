@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from imaplib import IMAP4
 
 from fsspec import AbstractFileSystem
@@ -42,8 +43,6 @@ class IMAPFileSystem(AbstractFileSystem):
             details = self._ls(path, **fetch_kwargs)
         except (MailboxFolderSelectError, IMAP4.error) as e:
             raise FileNotFoundError(path) from e
-        except StopIteration:
-            raise FileNotFoundError(path) from None
 
         return list(details.values() if detail else details.keys())
 
@@ -61,29 +60,21 @@ class IMAPFileSystem(AbstractFileSystem):
 
         try:
             self.mailbox.folder.set(path)
-            msg_id_or_filename = None
         except MailboxFolderSelectError:
             if "/" not in path:
                 raise
 
-            folder, msg_id_or_filename = path.rsplit("/", 1)
-
-        if msg_id_or_filename:
+        if self.mailbox.folder.get() != path:
             try:
-                self.mailbox.folder.set(folder)
-                msg_id = msg_id_or_filename
+                msg = self._get_message(path, **fetch_kwargs)
                 filename = None
             except MailboxFolderSelectError:
-                if "/" not in folder:
+                parent, filename = self._split_path_last(path)
+
+                if "/" not in parent:
                     raise
 
-                folder, msg_id = folder.rsplit("/", 1)
-                self.mailbox.folder.set(folder)
-                filename = msg_id_or_filename
-
-            msg = next(
-                self.mailbox.fetch(f"UID {msg_id}", mark_seen=False, **fetch_kwargs)
-            )
+                msg = self._get_message(parent, **fetch_kwargs)
 
             for att in msg.attachments:
                 if filename and filename != att.filename:
@@ -109,3 +100,47 @@ class IMAPFileSystem(AbstractFileSystem):
                 }
 
         return details
+
+    @override
+    def _open(self, path, **kwargs):
+        fetch_kwargs = {k: v for k, v in kwargs.items() if k in FETCH_OPTIONS}
+
+        att = self._get_attachment(path, **fetch_kwargs)
+        return io.BytesIO(att.payload)
+
+    def _get_message(self, path: str, **fetch_kwargs):
+        if "/" not in path:
+            raise FileNotFoundError(path)
+
+        parent, msg_id = self._split_path_last(path)
+        self.mailbox.folder.set(parent)
+
+        try:
+            msg = next(
+                self.mailbox.fetch(f"UID {msg_id}", mark_seen=False, **fetch_kwargs),
+                None,
+            )
+        except IMAP4.error as e:
+            raise FileNotFoundError(path) from e
+
+        if msg:
+            return msg
+
+        raise FileNotFoundError(path)
+
+    def _get_attachment(self, path: str, **fetch_kwargs):
+        if "/" not in path:
+            raise FileNotFoundError(path)
+
+        parent, filename = self._split_path_last(path)
+        msg = self._get_message(parent, **fetch_kwargs)
+        att = next((att for att in msg.attachments if att.filename == filename), None)
+
+        if att:
+            return att
+
+        raise FileNotFoundError(path)
+
+    @staticmethod
+    def _split_path_last(path: str) -> list[str]:
+        return path.rsplit("/", 1)

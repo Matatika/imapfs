@@ -383,3 +383,74 @@ def test_ls_folder_message_attachment_not_found(fs: IMAPFileSystem, move_to_test
 
     with pytest.raises(FileNotFoundError):
         fs.ls(path)
+
+def test_cat_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
+    content = fs.cat(path)
+
+    assert content
+    assert isinstance(content, bytes)
+
+    rows = list(csv.DictReader(io.TextIOWrapper(io.BytesIO(content))))
+
+    assert rows == [
+        {"id": "0", "name": "user0", "email": "user0@test.com"},
+        {"id": "1", "name": "user1", "email": "user1@test.com"},
+        {"id": "2", "name": "user2", "email": "user2@test.com"},
+        {"id": "3", "name": "user3", "email": "user3@test.com"},
+        {"id": "4", "name": "user4", "email": "user4@test.com"},
+    ]
+
+def test_cat_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfolder):
+    path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
+    content = fs.cat(path)
+
+    assert content
+    assert isinstance(content, bytes)
+
+    rows = list(csv.DictReader(io.TextIOWrapper(io.BytesIO(content))))
+
+    assert rows == [
+        {"id": "0", "name": "user0", "email": "user0@test.com"},
+        {"id": "1", "name": "user1", "email": "user1@test.com"},
+        {"id": "2", "name": "user2", "email": "user2@test.com"},
+        {"id": "3", "name": "user3", "email": "user3@test.com"},
+        {"id": "4", "name": "user4", "email": "user4@test.com"},
+    ]
+
+
+def test_cat_folder_message_attachment_not_found(
+    fs: IMAPFileSystem,
+    move_to_test_folder,
+):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{uuid.uuid4()}"
+
+    with pytest.raises(FileNotFoundError):
+        fs.cat(path)
+
+
+def test_cat_subfolder_message_attachment_not_found(
+    fs: IMAPFileSystem,
+    move_to_test_subfolder,
+):
+    path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}"
+
+    with pytest.raises(FileNotFoundError):
+        fs.cat(path)
+
+def test_read_text_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
+    text = fs.read_text(path)
+
+    assert text
+    assert isinstance(text, str)
+
+    rows = list(csv.DictReader(io.StringIO(text)))
+
+    assert rows == [
+        {"id": "0", "name": "user0", "email": "user0@test.com"},
+        {"id": "1", "name": "user1", "email": "user1@test.com"},
+        {"id": "2", "name": "user2", "email": "user2@test.com"},
+        {"id": "3", "name": "user3", "email": "user3@test.com"},
+        {"id": "4", "name": "user4", "email": "user4@test.com"},
+    ]
