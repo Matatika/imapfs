@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from imaplib import IMAP4
+
 from fsspec import AbstractFileSystem
 from imap_tools import MailBox
 from imap_tools.errors import MailboxFolderSelectError
@@ -24,7 +26,13 @@ class IMAPFileSystem(AbstractFileSystem):
 
     @override
     def ls(self, path: str, detail=True, **kwargs):
-        details = self._ls(path)
+        try:
+            details = self._ls(path)
+        except (MailboxFolderSelectError, IMAP4.error) as e:
+            raise FileNotFoundError(path) from e
+        except StopIteration:
+            raise FileNotFoundError(path) from None
+
         return list(details.values() if detail else details.keys())
 
     def _ls(self, path: str):
@@ -43,10 +51,13 @@ class IMAPFileSystem(AbstractFileSystem):
             self.mailbox.folder.set(path)
             msg_id = None
         except MailboxFolderSelectError:
+            if "/" not in path:
+                raise
+
             folder, msg_id = path.rsplit("/", 1)
-            self.mailbox.folder.set(folder)
 
         if msg_id:
+            self.mailbox.folder.set(folder)
             msg = next(self.mailbox.fetch(f"UID {msg_id}"))
 
             for att in msg.attachments:
