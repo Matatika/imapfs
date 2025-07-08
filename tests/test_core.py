@@ -343,13 +343,13 @@ def test_ls_subfolder_not_found(fs: IMAPFileSystem, path):
         fs.ls(path)
 
 
-def test_ls_message_not_found(fs: IMAPFileSystem):
+def test_ls_folder_message_not_found(fs: IMAPFileSystem):
     uint32_max = 2**32 - 1
     with pytest.raises(FileNotFoundError):
         fs.ls(f"{TEST_FOLDER_NAME}/{uint32_max}")
 
 
-def test_ls_message_malformed_id(fs: IMAPFileSystem):
+def test_ls_folder_message_malformed_id(fs: IMAPFileSystem):
     with pytest.raises(FileNotFoundError):
         fs.ls(f"{TEST_FOLDER_NAME}/{uuid.uuid4()}")
 
@@ -366,7 +366,7 @@ def test_ls_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfol
     assert objects == [{"name": "test_0.csv", "size": 135, "type": "file"}]
 
 
-def test_ls_message_attachment_not_found(fs: IMAPFileSystem, move_to_test_folder):
+def test_ls_folder_message_attachment_not_found(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{uuid.uuid4()}"
     with pytest.raises(FileNotFoundError):
         fs.ls(path)
