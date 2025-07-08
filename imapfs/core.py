@@ -9,6 +9,16 @@ from imap_tools import MailBox
 from imap_tools.errors import MailboxFolderSelectError
 from typing_extensions import override
 
+FETCH_OPTIONS = {
+    "charset",
+    "limit",
+    "mark_seen",
+    "reverse",
+    "headers_only",
+    "bulk",
+    "sort",
+}
+
 
 class IMAPFileSystem(AbstractFileSystem):
     """IMAP filesystem."""
@@ -26,8 +36,10 @@ class IMAPFileSystem(AbstractFileSystem):
 
     @override
     def ls(self, path: str, detail=True, **kwargs):
+        fetch_kwargs = {k: v for k, v in kwargs.items() if k in FETCH_OPTIONS}
+
         try:
-            details = self._ls(path)
+            details = self._ls(path, **fetch_kwargs)
         except (MailboxFolderSelectError, IMAP4.error) as e:
             raise FileNotFoundError(path) from e
         except StopIteration:
@@ -35,7 +47,7 @@ class IMAPFileSystem(AbstractFileSystem):
 
         return list(details.values() if detail else details.keys())
 
-    def _ls(self, path: str):
+    def _ls(self, path: str, **fetch_kwargs):
         path = path.strip("/")
 
         folders = self.mailbox.folder.list(path)
@@ -58,7 +70,9 @@ class IMAPFileSystem(AbstractFileSystem):
 
         if msg_id:
             self.mailbox.folder.set(folder)
-            msg = next(self.mailbox.fetch(f"UID {msg_id}", mark_seen=False))
+            msg = next(
+                self.mailbox.fetch(f"UID {msg_id}", mark_seen=False, **fetch_kwargs)
+            )
 
             for att in msg.attachments:
                 details[att.filename] = {
