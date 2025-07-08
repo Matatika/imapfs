@@ -24,6 +24,10 @@ class IMAPFileSystem(AbstractFileSystem):
 
     @override
     def ls(self, path: str, detail=True, **kwargs):
+        details = self._ls(path)
+        return list(details.values() if detail else details.keys())
+
+    def _ls(self, path: str):
         path = path.strip("/")
 
         folders = self.mailbox.folder.list(path)
@@ -32,26 +36,28 @@ class IMAPFileSystem(AbstractFileSystem):
             f.name: {"name": f.name, "size": 0, "type": "directory"} for f in folders
         }
 
-        if path:
-            try:
-                self.mailbox.folder.set(path)
-                msg_id = None
-            except MailboxFolderSelectError:
-                folder, msg_id = path.rsplit("/", 1)
-                self.mailbox.folder.set(folder)
+        if not path:
+            return details
 
-            if msg_id:
-                msg = next(self.mailbox.fetch(f"UID {msg_id}"))
+        try:
+            self.mailbox.folder.set(path)
+            msg_id = None
+        except MailboxFolderSelectError:
+            folder, msg_id = path.rsplit("/", 1)
+            self.mailbox.folder.set(folder)
 
-                for att in msg.attachments:
-                    details[att.filename] = {
-                        "name": att.filename,
-                        "size": att.size,
-                        "type": "file",
-                    }
+        if msg_id:
+            msg = next(self.mailbox.fetch(f"UID {msg_id}"))
 
-            else:
-                for msg_id in self.mailbox.uids():
-                    details[msg_id] = {"name": msg_id, "size": 0, "type": "directory"}
+            for att in msg.attachments:
+                details[att.filename] = {
+                    "name": att.filename,
+                    "size": att.size,
+                    "type": "file",
+                }
 
-        return list(details.values() if detail else details.keys())
+        else:
+            for msg_id in self.mailbox.uids():
+                details[msg_id] = {"name": msg_id, "size": 0, "type": "directory"}
+
+        return details
