@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fsspec import AbstractFileSystem
 from imap_tools import MailBox
+from imap_tools.errors import MailboxFolderSelectError
 from typing_extensions import override
 
 
@@ -32,9 +33,25 @@ class IMAPFileSystem(AbstractFileSystem):
         }
 
         if path:
-            self.mailbox.folder.set(path)
+            try:
+                self.mailbox.folder.set(path)
+                msg_id = None
+            except MailboxFolderSelectError:
+                folder, msg_id = path.rsplit("/", 1)
+                self.mailbox.folder.set(folder)
 
-            for msg_id in self.mailbox.uids():
-                details[msg_id] = {"name": msg_id, "size": 0, "type": "directory"}
+            if msg_id:
+                msg = next(self.mailbox.fetch(f"UID {msg_id}"))
+
+                for att in msg.attachments:
+                    details[att.filename] = {
+                        "name": att.filename,
+                        "size": att.size,
+                        "type": "file",
+                    }
+
+            else:
+                for msg_id in self.mailbox.uids():
+                    details[msg_id] = {"name": msg_id, "size": 0, "type": "directory"}
 
         return list(details.values() if detail else details.keys())

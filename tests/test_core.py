@@ -1,5 +1,7 @@
 """IMAP filesystem tests."""
 
+import csv
+import io
 import os
 import uuid
 import warnings
@@ -77,7 +79,33 @@ def send_message(smtp_client: SMTP):
     msg["To"] = os.getenv("IMAP_USERNAME")
     msg.set_content(TEST_FOLDER_NAME)
 
+    rows = [
+        {"id": 0, "name": "user0", "email": "user0@test.com"},
+        {"id": 1, "name": "user1", "email": "user1@test.com"},
+        {"id": 2, "name": "user2", "email": "user2@test.com"},
+        {"id": 3, "name": "user3", "email": "user3@test.com"},
+        {"id": 4, "name": "user4", "email": "user4@test.com"},
+    ]
+
+    for i in range(3):
+        buf = io.StringIO()
+
+        writer = csv.DictWriter(buf, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+
+        data = io.BytesIO(buf.getvalue().encode("utf-8")).getvalue()
+
+        msg.add_attachment(
+            data,
+            maintype="text",
+            subtype="csv",
+            filename=f"test_{i}.csv",
+        )
+
     smtp_client.send_message(msg)
+
+    return msg
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -193,7 +221,11 @@ def test_ls_folder(fs: IMAPFileSystem, move_to_test_folder, path):
 )
 def test_ls_folder_no_detail(fs: IMAPFileSystem, move_to_test_folder, path):
     objects = fs.ls(path, detail=False)
-    assert objects == [TEST_FOLDER_NAME, TEST_SUBFOLDER_NAME, move_to_test_folder]
+    assert objects == [
+        TEST_FOLDER_NAME,
+        TEST_SUBFOLDER_NAME,
+        move_to_test_folder,
+    ]
 
 
 @pytest.mark.parametrize(
@@ -219,5 +251,54 @@ def test_ls_subfolder(fs: IMAPFileSystem, move_to_test_subfolder, path):
             "name": move_to_test_subfolder,
             "size": 0,
             "type": "directory",
+        },
+    ]
+
+def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
+    objects = fs.ls(path)
+    assert objects == [
+        {
+            "name": "test_0.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": "test_1.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": "test_2.csv",
+            "size": 135,
+            "type": "file",
+        },
+    ]
+
+
+def test_ls_folder_message_no_detail(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
+    objects = fs.ls(path, detail=False)
+    assert objects == ["test_0.csv", "test_1.csv", "test_2.csv"]
+
+
+def test_ls_subfolder_message(fs: IMAPFileSystem, move_to_test_subfolder):
+    path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}"
+    objects = fs.ls(path)
+    assert objects == [
+        {
+            "name": "test_0.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": "test_1.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": "test_2.csv",
+            "size": 135,
+            "type": "file",
         },
     ]
