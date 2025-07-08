@@ -61,25 +61,42 @@ class IMAPFileSystem(AbstractFileSystem):
 
         try:
             self.mailbox.folder.set(path)
-            msg_id = None
+            msg_id_or_filename = None
         except MailboxFolderSelectError:
             if "/" not in path:
                 raise
 
-            folder, msg_id = path.rsplit("/", 1)
+            folder, msg_id_or_filename = path.rsplit("/", 1)
 
-        if msg_id:
-            self.mailbox.folder.set(folder)
+        if msg_id_or_filename:
+            try:
+                self.mailbox.folder.set(folder)
+                msg_id = msg_id_or_filename
+                filename = None
+            except MailboxFolderSelectError:
+                if "/" not in folder:
+                    raise
+
+                folder, msg_id = folder.rsplit("/", 1)
+                self.mailbox.folder.set(folder)
+                filename = msg_id_or_filename
+
             msg = next(
                 self.mailbox.fetch(f"UID {msg_id}", mark_seen=False, **fetch_kwargs)
             )
 
             for att in msg.attachments:
+                if filename and filename != att.filename:
+                    continue
+
                 details[att.filename] = {
                     "name": att.filename,
                     "size": att.size,
                     "type": "file",
                 }
+
+            if filename and not details:
+                raise FileNotFoundError(path)
 
         else:
             for msg_id in self.mailbox.uids():
