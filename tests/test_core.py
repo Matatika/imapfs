@@ -441,7 +441,7 @@ def test_ls_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
     objects = fs.ls(path)
 
-    assert objects == [{"name": f"{path}/test_0.csv", "size": 135, "type": "file"}]
+    assert objects == [{"name": path, "size": 135, "type": "file"}]
 
 
 def test_ls_folder_message_glob_attachment(fs: IMAPFileSystem, move_to_test_folder):
@@ -461,7 +461,7 @@ def test_ls_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfol
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
     objects = fs.ls(path)
 
-    assert objects == [{"name": f"{path}/test_0.csv", "size": 135, "type": "file"}]
+    assert objects == [{"name": path, "size": 135, "type": "file"}]
 
 def test_ls_subfolder_message_glob_attachment(
     fs: IMAPFileSystem,
