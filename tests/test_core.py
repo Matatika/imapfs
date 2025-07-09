@@ -454,3 +454,69 @@ def test_read_text_folder_message_attachment(fs: IMAPFileSystem, move_to_test_fo
         {"id": "3", "name": "user3", "email": "user3@test.com"},
         {"id": "4", "name": "user4", "email": "user4@test.com"},
     ]
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        TEST_FOLDER_NAME,
+        TEST_SUBFOLDER_NAME,
+    ],
+    ids=[
+        "folder",
+        "subfolder",
+    ],
+)
+def test_created_folder(fs: IMAPFileSystem, path):
+    with pytest.raises(FileNotFoundError):
+        fs.created(path)
+
+
+def test_created_folder_message(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
+    created = fs.created(path)
+
+    assert created.date() == datetime.now(tz=timezone.utc).date()
+
+
+def test_created_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
+    created = fs.created(path)
+
+    assert created.date() == datetime.now(tz=timezone.utc).date()
+
+
+def test_created_folder_message_not_found(fs: IMAPFileSystem):
+    uint32_max = 2**32 - 1
+    path = f"{TEST_FOLDER_NAME}/{uint32_max}"
+
+    with pytest.raises(FileNotFoundError):
+        fs.created(path)
+
+
+def test_created_folder_message_attachment_message_not_found(fs: IMAPFileSystem):
+    uint32_max = 2**32 - 1
+    path = f"{TEST_FOLDER_NAME}/{uint32_max}/test_0.csv"
+
+    with pytest.raises(FileNotFoundError):
+        fs.created(path)
+
+
+def test_created_folder_message_attachment_not_found(
+    fs: IMAPFileSystem,
+    move_to_test_folder,
+):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{uuid.uuid4()}"
+
+    with pytest.raises(FileNotFoundError):
+        fs.created(path)
+
+
+def test_modified_folder_message(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
+    modified = fs.modified(path)
+
+    assert modified.date() == datetime.now(tz=timezone.utc).date()
+
+    created = fs.created(path)
+
+    assert modified == created

@@ -8,6 +8,7 @@ from imaplib import IMAP4
 from fsspec import AbstractFileSystem
 from imap_tools import MailBox
 from imap_tools.errors import MailboxFolderSelectError
+from imap_tools.message import MailMessage
 from typing_extensions import override
 
 FETCH_OPTIONS = {
@@ -108,6 +109,28 @@ class IMAPFileSystem(AbstractFileSystem):
         att = self._get_attachment(path, **fetch_kwargs)
         return io.BytesIO(att.payload)
 
+    @override
+    def created(self, path, **kwargs):
+        fetch_kwargs = {k: v for k, v in kwargs.items() if k in FETCH_OPTIONS}
+
+        try:
+            msg = self._get_message(path, headers_only=True, **fetch_kwargs)
+        except MailboxFolderSelectError:
+            parent, filename = self._split_path_last(path)
+            msg = self._get_message(
+                parent,
+                **fetch_kwargs,
+                # force headers as they are required to fetch attachments
+                headers_only=False,
+            )
+            self._get_attachment_from_message(msg, filename)
+
+        return msg.date
+
+    @override
+    def modified(self, path, **kwargs):
+        return self.created(path, **kwargs)
+
     def _get_message(self, path: str, **fetch_kwargs):
         if "/" not in path:
             raise FileNotFoundError(path)
@@ -134,12 +157,16 @@ class IMAPFileSystem(AbstractFileSystem):
 
         parent, filename = self._split_path_last(path)
         msg = self._get_message(parent, **fetch_kwargs)
+
+        return self._get_attachment_from_message(msg, filename)
+
+    def _get_attachment_from_message(self, msg: MailMessage, filename: str):
         att = next((att for att in msg.attachments if att.filename == filename), None)
 
         if att:
             return att
 
-        raise FileNotFoundError(path)
+        raise FileNotFoundError(filename)
 
     @staticmethod
     def _split_path_last(path: str) -> list[str]:
