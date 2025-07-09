@@ -206,6 +206,20 @@ def test_ls_folder(fs: IMAPFileSystem, move_to_test_folder, path):
     ]
 
 
+def test_ls_folder_glob(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/*"
+    objects = fs.ls(path)
+
+    assert objects == [
+        TEST_SUBFOLDER,
+        {
+            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}",
+            "size": 0,
+            "type": "directory",
+        },
+    ]
+
+
 @pytest.mark.parametrize(
     "path",
     [
@@ -259,6 +273,19 @@ def test_ls_subfolder(fs: IMAPFileSystem, move_to_test_subfolder, path):
     ]
 
 
+def test_ls_subfolder_glob(fs: IMAPFileSystem, move_to_test_subfolder):
+    path = f"{TEST_SUBFOLDER_NAME}/*"
+    objects = fs.ls(path)
+
+    assert objects == [
+        {
+            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}",
+            "size": 0,
+            "type": "directory",
+        },
+    ]
+
+
 def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
     objects = fs.ls(path)
@@ -276,6 +303,29 @@ def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
         },
         {
             "name": f"{path}/test_2.csv",
+            "size": 135,
+            "type": "file",
+        },
+    ]
+
+
+def test_ls_folder_message_glob(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/*"
+    objects = fs.ls(path)
+
+    assert objects == [
+        {
+            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_1.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_2.csv",
             "size": 135,
             "type": "file",
         },
@@ -310,6 +360,29 @@ def test_ls_subfolder_message(fs: IMAPFileSystem, move_to_test_subfolder):
             "type": "file",
         },
     ]
+
+def test_ls_subfolder_message_glob(fs: IMAPFileSystem, move_to_test_subfolder):
+    path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/*"
+    objects = fs.ls(path)
+
+    assert objects == [
+        {
+            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_1.csv",
+            "size": 135,
+            "type": "file",
+        },
+        {
+            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_2.csv",
+            "size": 135,
+            "type": "file",
+        },
+    ]
+
 
 @pytest.mark.parametrize(
     "path",
@@ -371,18 +444,50 @@ def test_ls_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
     assert objects == [{"name": f"{path}/test_0.csv", "size": 135, "type": "file"}]
 
 
+def test_ls_folder_message_glob_attachment(fs: IMAPFileSystem, move_to_test_folder):
+    path = f"{TEST_FOLDER_NAME}/*/test_0.csv"
+    objects = fs.ls(path)
+
+    assert objects == [
+        {
+            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv",
+            "size": 135,
+            "type": "file",
+        }
+    ]
+
+
 def test_ls_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfolder):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
     objects = fs.ls(path)
 
     assert objects == [{"name": f"{path}/test_0.csv", "size": 135, "type": "file"}]
 
+def test_ls_subfolder_message_glob_attachment(
+    fs: IMAPFileSystem,
+    move_to_test_subfolder,
+):
+    path = f"{TEST_SUBFOLDER_NAME}/*/test_0.csv"
+    objects = fs.ls(path)
 
-def test_ls_folder_message_attachment_not_found(fs: IMAPFileSystem, move_to_test_folder):
+    assert objects == [
+        {
+            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv",
+            "size": 135,
+            "type": "file",
+        }
+    ]
+
+
+def test_ls_folder_message_attachment_not_found(
+    fs: IMAPFileSystem,
+    move_to_test_folder,
+):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{uuid.uuid4()}"
 
     with pytest.raises(FileNotFoundError):
         fs.ls(path)
+
 
 def test_cat_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
@@ -400,6 +505,7 @@ def test_cat_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
         {"id": "3", "name": "user3", "email": "user3@test.com"},
         {"id": "4", "name": "user4", "email": "user4@test.com"},
     ]
+
 
 def test_cat_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfolder):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
@@ -438,6 +544,7 @@ def test_cat_subfolder_message_attachment_not_found(
     with pytest.raises(FileNotFoundError):
         fs.cat(path)
 
+
 def test_read_text_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
     text = fs.read_text(path)
@@ -454,6 +561,7 @@ def test_read_text_folder_message_attachment(fs: IMAPFileSystem, move_to_test_fo
         {"id": "3", "name": "user3", "email": "user3@test.com"},
         {"id": "4", "name": "user4", "email": "user4@test.com"},
     ]
+
 
 @pytest.mark.parametrize(
     "path",
