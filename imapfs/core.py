@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fsspec import AbstractFileSystem
-from imap_tools import MailBox
+from imap_tools import AND, MailBox
 from imap_tools.errors import MailboxFolderSelectError
 from typing_extensions import override
 
@@ -25,6 +25,7 @@ FETCH_OPTIONS = {
     "headers_only",
     "bulk",
     "sort",
+    "since",
 }
 
 
@@ -155,7 +156,16 @@ class IMAPFileSystem(AbstractFileSystem):
         parent, msg_id = self._split_path_last(path)
         self.mailbox.folder.set(parent)
 
-        criteria = "ALL" if msg_id == "*" else f"UID {msg_id}"
+        all_ = msg_id == "*"
+
+        try:
+            criteria = AND(
+                date_gte=fetch_kwargs.pop("since", None),
+                all=True if all_ else None,
+                uid=msg_id if not all_ else None,
+            )
+        except TypeError as e:
+            raise FileNotFoundError(path) from e
 
         try:
             msgs = self.mailbox.fetch(
