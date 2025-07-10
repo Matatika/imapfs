@@ -121,15 +121,20 @@ class IMAPFileSystem(AbstractFileSystem):
         fetch_kwargs = {k: v for k, v in kwargs.items() if k in FETCH_OPTIONS}
 
         try:
-            msg = next(self._get_messages(path, headers_only=True, **fetch_kwargs))
+            msg = next(
+                self._get_messages(
+                    path,
+                    headers_only=fetch_kwargs.pop("headers_only", False),
+                    **fetch_kwargs,
+                )
+            )
         except MailboxFolderSelectError:
             parent, filename = self._split_path_last(path)
             msg = next(
                 self._get_messages(
                     parent,
+                    headers_only=False,  # headers only does not fetch attachments
                     **fetch_kwargs,
-                    # force headers as they are required to fetch attachments
-                    headers_only=False,
                 )
             )
             self._get_attachment_from_message(msg, filename)
@@ -150,7 +155,12 @@ class IMAPFileSystem(AbstractFileSystem):
         criteria = "ALL" if msg_id == "*" else f"UID {msg_id}"
 
         try:
-            msgs = self.mailbox.fetch(criteria, mark_seen=False, **fetch_kwargs)
+            msgs = self.mailbox.fetch(
+                criteria,
+                mark_seen=fetch_kwargs.pop("mark_seen", False),
+                reverse=fetch_kwargs.pop("reverse", True),
+                **fetch_kwargs,
+            )
             msg = next(msgs, None)
         except IMAP4.error as e:
             raise FileNotFoundError(path) from e
