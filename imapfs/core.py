@@ -7,12 +7,15 @@ import io
 import itertools
 from imaplib import IMAP4
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fsspec import AbstractFileSystem
 from imap_tools import MailBox
 from imap_tools.errors import MailboxFolderSelectError
-from imap_tools.message import MailMessage
 from typing_extensions import override
+
+if TYPE_CHECKING:
+    from imap_tools.message import MailMessage
 
 FETCH_OPTIONS = {
     "charset",
