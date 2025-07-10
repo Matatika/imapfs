@@ -38,10 +38,19 @@ class IMAPFileSystem(AbstractFileSystem):
 
         host = storage_options.pop("host")
         username = storage_options.pop("username")
-        password = storage_options.pop("password")
+        access_token = storage_options.pop("access_token", None)
+        password = storage_options.pop("password", None)
+
+        if not any((access_token, password)):
+            msg = "Either 'access_token' or 'password' should be specified"
+            raise ValueError(msg)
 
         self.mailbox = MailBox(host)
-        self.mailbox.login(username, password)
+
+        if access_token:
+            self.mailbox.xoauth2(username, access_token)
+        else:
+            self.mailbox.login(username, password)
 
     @override
     def ls(self, path: str, detail=True, **kwargs):
