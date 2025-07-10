@@ -539,7 +539,7 @@ def test_cat_subfolder_message_attachment_not_found(
     fs: IMAPFileSystem,
     move_to_test_subfolder,
 ):
-    path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}"
+    path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/{uuid.uuid4()}"
 
     with pytest.raises(FileNotFoundError):
         fs.cat(path)
