@@ -150,6 +150,8 @@ class IMAPFileSystem(AbstractFileSystem):
         return self.created(path, **kwargs)
 
     def _get_messages(self, path: str, **fetch_kwargs):
+        path = path.strip("/")
+
         if "/" not in path:
             raise FileNotFoundError(path)
 
@@ -185,6 +187,8 @@ class IMAPFileSystem(AbstractFileSystem):
         raise FileNotFoundError(path)
 
     def _get_attachment(self, path: str, **fetch_kwargs):
+        path = path.strip("/")
+
         if "/" not in path:
             raise FileNotFoundError(path)
 
