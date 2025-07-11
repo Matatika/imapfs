@@ -113,7 +113,19 @@ class IMAPFileSystem(AbstractFileSystem):
                 raise FileNotFoundError(path)
 
         else:
-            for msg_id in self.mailbox.uids():
+            uids = self.mailbox.uids(
+                AND(date_gte=fetch_kwargs.pop("since", None), all=True)
+            )
+
+            if fetch_kwargs.pop("reverse", True):
+                uids = reversed(uids)
+
+            limit = fetch_kwargs.pop("limit", None)
+
+            for i, msg_id in enumerate(uids, start=1):
+                if limit and i > limit:
+                    break
+
                 resolved_path = Path(self.mailbox.folder.get(), msg_id)
 
                 if resolved_path.is_relative_to(path) or resolved_path.match(path):
