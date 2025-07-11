@@ -107,7 +107,12 @@ class IMAPFileSystem(AbstractFileSystem):
 
                 if resolved_path.is_relative_to(path) or resolved_path.match(path):
                     name = str(resolved_path)
-                    details[name] = {"name": name, "size": att.size, "type": "file"}
+                    details[name] = {
+                        "name": name,
+                        "size": att.size,
+                        "type": "file",
+                        "last_modified": msg.date,
+                    }
 
             if filename and not details:
                 raise FileNotFoundError(path)

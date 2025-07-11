@@ -23,6 +23,8 @@ TEST_SUBFOLDER = {"name": TEST_SUBFOLDER_NAME, "size": 0, "type": "directory"}
 INBOX_NAME = "INBOX"
 INBOX_FOLDER = {"name": INBOX_NAME, "size": 0, "type": "directory"}
 
+NOW = datetime.now(tz=timezone.utc)
+
 
 load_dotenv()
 
@@ -61,7 +63,7 @@ def test_message_search_criteria(smtp_client: SMTP):
     return "FROM {from_} TO {to} SINCE {since}".format(
         from_=smtp_client.user,
         to=os.getenv("IMAP_USERNAME"),
-        since=datetime.now(tz=timezone.utc).date().strftime(r"%d-%b-%Y"),
+        since=NOW.strftime(r"%d-%b-%Y"),
     )
 
 
@@ -286,50 +288,93 @@ def test_ls_subfolder_glob(fs: IMAPFileSystem, move_to_test_subfolder):
     ]
 
 
-def test_ls_folder_message(fs: IMAPFileSystem, move_to_test_folder):
+def test_ls_folder_message(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_folder,
+):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [
-        {
-            "name": f"{path}/test_0.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{path}/test_1.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{path}/test_2.csv",
-            "size": 135,
-            "type": "file",
-        },
-    ]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == f"{path}/{expected.get_filename()}"
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == f"{path}/{expected.get_filename()}"
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == f"{path}/{expected.get_filename()}"
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
-def test_ls_folder_message_glob(fs: IMAPFileSystem, move_to_test_folder):
+def test_ls_folder_message_glob(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_folder,
+):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/*"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [
-        {
-            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_1.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_2.csv",
-            "size": 135,
-            "type": "file",
-        },
-    ]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
 def test_ls_folder_message_no_detail(fs: IMAPFileSystem, move_to_test_folder):
@@ -339,50 +384,93 @@ def test_ls_folder_message_no_detail(fs: IMAPFileSystem, move_to_test_folder):
     assert objects == [f"{path}/test_0.csv", f"{path}/test_1.csv", f"{path}/test_2.csv"]
 
 
-def test_ls_subfolder_message(fs: IMAPFileSystem, move_to_test_subfolder):
+def test_ls_subfolder_message(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_subfolder,
+):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [
-        {
-            "name": f"{path}/test_0.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{path}/test_1.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{path}/test_2.csv",
-            "size": 135,
-            "type": "file",
-        },
-    ]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == f"{path}/{expected.get_filename()}"
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == f"{path}/{expected.get_filename()}"
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == f"{path}/{expected.get_filename()}"
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
-def test_ls_subfolder_message_glob(fs: IMAPFileSystem, move_to_test_subfolder):
+def test_ls_subfolder_message_glob(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_subfolder,
+):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/*"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [
-        {
-            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_1.csv",
-            "size": 135,
-            "type": "file",
-        },
-        {
-            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_2.csv",
-            "size": 135,
-            "type": "file",
-        },
-    ]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
 @pytest.mark.parametrize(
@@ -438,47 +526,98 @@ def test_ls_folder_message_malformed_id(fs: IMAPFileSystem):
         fs.ls(f"{TEST_FOLDER_NAME}/{uuid.uuid4()}")
 
 
-def test_ls_folder_message_attachment(fs: IMAPFileSystem, move_to_test_folder):
+def test_ls_folder_message_attachment(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_folder,
+):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [{"name": path, "size": 135, "type": "file"}]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == path
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
-def test_ls_folder_message_glob_attachment(fs: IMAPFileSystem, move_to_test_folder):
+def test_ls_folder_message_glob_attachment(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_folder,
+):
     path = f"{TEST_FOLDER_NAME}/*/test_0.csv"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [
-        {
-            "name": f"{TEST_FOLDER_NAME}/{move_to_test_folder}/test_0.csv",
-            "size": 135,
-            "type": "file",
-        }
-    ]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_FOLDER_NAME}/{move_to_test_folder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
-def test_ls_subfolder_message_attachment(fs: IMAPFileSystem, move_to_test_subfolder):
+def test_ls_subfolder_message_attachment(
+    fs: IMAPFileSystem,
+    send_message: EmailMessage,
+    move_to_test_subfolder,
+):
     path = f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [{"name": path, "size": 135, "type": "file"}]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert actual["name"] == path
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
 def test_ls_subfolder_message_glob_attachment(
     fs: IMAPFileSystem,
+    send_message: EmailMessage,
     move_to_test_subfolder,
 ):
     path = f"{TEST_SUBFOLDER_NAME}/*/test_0.csv"
     objects = fs.ls(path)
+    expected_actual = zip(send_message.iter_attachments(), objects)
 
-    assert objects == [
-        {
-            "name": f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/test_0.csv",
-            "size": 135,
-            "type": "file",
-        }
-    ]
+    expected, actual = next(expected_actual)
+
+    assert actual.keys() == {"name", "size", "type", "last_modified"}
+    assert (
+        actual["name"]
+        == f"{TEST_SUBFOLDER_NAME}/{move_to_test_subfolder}/{expected.get_filename()}"
+    )
+    assert actual["size"] == len(expected.get_content())
+    assert actual["type"] == "file"
+    assert isinstance(actual["last_modified"], datetime)
+    assert actual["last_modified"].date() == NOW.date()
+
+    with pytest.raises(StopIteration):
+        next(expected_actual)
 
 
 def test_ls_folder_message_attachment_not_found(
@@ -611,7 +750,7 @@ def test_created_folder_message(fs: IMAPFileSystem, test_folder, move_to_test_fo
     path = f"{test_folder}/{move_to_test_folder}"
     created = fs.created(path)
 
-    assert created.date() == datetime.now(tz=timezone.utc).date()
+    assert created.date() == NOW.date()
 
 
 @pytest.mark.parametrize(
@@ -633,7 +772,7 @@ def test_created_folder_message_attachment(
     path = f"{test_folder}/{move_to_test_folder}/test_0.csv"
     created = fs.created(path)
 
-    assert created.date() == datetime.now(tz=timezone.utc).date()
+    assert created.date() == NOW.date()
 
 
 def test_created_folder_message_not_found(fs: IMAPFileSystem):
@@ -666,7 +805,7 @@ def test_modified_folder_message(fs: IMAPFileSystem, move_to_test_folder):
     path = f"{TEST_FOLDER_NAME}/{move_to_test_folder}"
     modified = fs.modified(path)
 
-    assert modified.date() == datetime.now(tz=timezone.utc).date()
+    assert modified.date() == NOW.date()
 
     created = fs.created(path)
 
