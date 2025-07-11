@@ -117,7 +117,7 @@ class IMAPFileSystem(AbstractFileSystem):
                 AND(date_gte=fetch_kwargs.pop("since", None), all=True)
             )
 
-            if fetch_kwargs.pop("reverse", True):
+            if fetch_kwargs.pop("reverse", False):
                 uids = reversed(uids)
 
             limit = fetch_kwargs.pop("limit", None)
@@ -194,7 +194,6 @@ class IMAPFileSystem(AbstractFileSystem):
             msgs = self.mailbox.fetch(
                 criteria,
                 mark_seen=fetch_kwargs.pop("mark_seen", False),
-                reverse=fetch_kwargs.pop("reverse", True),
                 **fetch_kwargs,
             )
             msg = next(msgs, None)
