@@ -5,6 +5,7 @@ from __future__ import annotations
 import fnmatch
 import io
 import itertools
+import re
 from imaplib import IMAP4
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -100,10 +101,12 @@ class IMAPFileSystem(AbstractFileSystem):
             msg_attachments = ((msg, att) for msg in msgs for att in msg.attachments)
 
             for msg, att in msg_attachments:
-                if filename and not fnmatch.fnmatch(att.filename, filename):
+                att_filename = re.sub(r"[\r\n]", "", att.filename)
+
+                if filename and not fnmatch.fnmatch(att_filename, filename):
                     continue
 
-                resolved_path = Path(self.mailbox.folder.get(), msg.uid, att.filename)
+                resolved_path = Path(self.mailbox.folder.get(), msg.uid, att_filename)
 
                 if resolved_path.is_relative_to(path) or resolved_path.match(path):
                     name = str(resolved_path)
@@ -223,10 +226,11 @@ class IMAPFileSystem(AbstractFileSystem):
         return self._get_attachment_from_message(msg, filename)
 
     def _get_attachment_from_message(self, msg: MailMessage, filename: str):
-        att = next((att for att in msg.attachments if att.filename == filename), None)
+        for att in msg.attachments:
+            att_filename = re.sub(r"[\r\n]", "", att.filename)
 
-        if att:
-            return att
+            if att_filename == filename:
+                return att
 
         raise FileNotFoundError(filename)
 
